@@ -2,10 +2,10 @@ import requests
 import json
 import os
 import sys
+import hashlib
 from datetime import datetime
 
 URL = os.environ["TARGET_URL"]
-TEXT = os.environ["TARGET_TEXT"]
 PHONE = os.environ["PHONE"]
 TEXTBELT_KEY = os.environ["TEXTBELT_APIKEY"]
 
@@ -25,7 +25,7 @@ def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
             return json.load(f)
-    return {"text_found": None}
+    return {"page_hash": None}
 
 
 def save_state(state):
@@ -37,6 +37,10 @@ def fetch_page():
     response = requests.get(URL, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
     response.raise_for_status()
     return response.text
+
+
+def hash_content(content):
+    return hashlib.sha256(content.encode()).hexdigest()
 
 
 def send_sms(message):
@@ -54,31 +58,27 @@ def send_sms(message):
 
 def main():
     state = load_state()
-    prev_found = state.get("text_found")
+    prev_hash = state.get("page_hash")
 
     try:
-        page_content = fetch_page()
+        content = fetch_page()
     except Exception as e:
         log(f"ERROR fetching {URL}: {e}")
         sys.exit(1)
 
-    text_found = TEXT in page_content
-    log(f"Checked {URL} | Looking for: '{TEXT}' | Found: {text_found} | Previously: {prev_found}")
+    current_hash = hash_content(content)
+    log(f"Checked {URL} | Hash: {current_hash[:12]}... | Previous: {str(prev_hash)[:12]}...")
 
-    if prev_found is None:
+    if prev_hash is None:
         log("First run — baseline established. No alert sent.")
-    elif text_found and not prev_found:
-        msg = f"ALERT: '{TEXT}' now APPEARS at {URL}"
-        log(msg)
-        send_sms(msg)
-    elif not text_found and prev_found:
-        msg = f"ALERT: '{TEXT}' has DISAPPEARED from {URL}"
+    elif current_hash != prev_hash:
+        msg = f"ALERT: {URL} has changed."
         log(msg)
         send_sms(msg)
     else:
         log("No change detected.")
 
-    state["text_found"] = text_found
+    state["page_hash"] = current_hash
     save_state(state)
 
 
