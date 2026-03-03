@@ -8,6 +8,7 @@ from datetime import datetime
 URL = os.environ["TARGET_URL"]
 PHONE = os.environ["PHONE"]
 TEXTBELT_KEY = os.environ["TEXTBELT_APIKEY"]
+ALERT_MESSAGE = os.environ.get("ALERT_MESSAGE", "ALERT: The webpage you are monitoring has changed.")
 
 STATE_FILE = "state.json"
 LOG_FILE = "monitor.log"
@@ -72,7 +73,7 @@ def main():
     if prev_hash is None:
         log("First run — baseline established. No alert sent.")
     elif current_hash != prev_hash:
-        msg = "ALERT: The webpage you are monitoring has changed."
+        msg = ALERT_MESSAGE
         log(msg)
         send_sms(msg)
     else:

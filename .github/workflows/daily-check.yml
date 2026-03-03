@@ -26,6 +26,7 @@ jobs:
       - name: Run monitor
         env:
           TARGET_URL: ${{ vars.TARGET_URL }}
+          ALERT_MESSAGE: ${{ vars.ALERT_MESSAGE }}
           PHONE: ${{ secrets.PHONE }}
           TEXTBELT_APIKEY: ${{ secrets.TEXTBELT_APIKEY }}
         run: python monitor.py
