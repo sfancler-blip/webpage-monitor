@@ -72,7 +72,7 @@ def main():
     if prev_hash is None:
         log("First run — baseline established. No alert sent.")
     elif current_hash != prev_hash:
-        msg = f"ALERT: {URL} has changed."
+        msg = "ALERT: The webpage you are monitoring has changed."
         log(msg)
         send_sms(msg)
     else:
