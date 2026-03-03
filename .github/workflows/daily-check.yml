@@ -1,0 +1,40 @@
+name: Daily Webpage Monitor
+
+on:
+  schedule:
+    - cron: '0 9 * * *'   # 9:00 AM UTC every day — adjust as needed
+  workflow_dispatch:        # Allows manual trigger from the GitHub UI
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # Needed to commit state.json and monitor.log back
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run monitor
+        env:
+          TARGET_URL: ${{ vars.TARGET_URL }}
+          TARGET_TEXT: ${{ vars.TARGET_TEXT }}
+          PHONE: ${{ secrets.PHONE }}
+          TEXTBELT_APIKEY: ${{ secrets.TEXTBELT_APIKEY }}
+        run: python monitor.py
+
+      - name: Commit updated state and log
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state.json monitor.log
+          git diff --staged --quiet || git commit -m "chore: update monitor state [skip ci]"
+          git push
