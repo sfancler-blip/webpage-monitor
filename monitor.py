@@ -12,6 +12,9 @@ ALERT_MESSAGE = os.environ.get("ALERT_MESSAGE", "ALERT: The webpage you are moni
 WATCH_TEXT = os.environ.get("WATCH_TEXT", "")
 MISSING_TEXT_MESSAGE = os.environ.get("MISSING_TEXT_MESSAGE", f"ALERT: Expected text is no longer found on the monitored page.")
 
+# MODE: "hash" — alert on any page change | "text" — alert when WATCH_TEXT disappears
+MODE = "hash"
+
 STATE_FILE = "state.json"
 LOG_FILE = "monitor.log"
 
@@ -91,20 +94,28 @@ def main():
         log(f"ERROR fetching {URL}: {e}")
         sys.exit(1)
 
-    current_hash = hash_content(content)
-    log(f"Checked {URL} | Hash: {current_hash[:12]}... | Previous: {str(prev_hash)[:12]}...")
+    if MODE == "hash":
+        current_hash = hash_content(content)
+        log(f"Checked {URL} | Hash: {current_hash[:12]}... | Previous: {str(prev_hash)[:12]}...")
 
-    if prev_hash is None:
-        log("First run — baseline established. No alert sent.")
-    elif current_hash != prev_hash:
-        msg = ALERT_MESSAGE
-        log(msg)
-        send_sms(msg)
+        if prev_hash is None:
+            log("First run — baseline established. No alert sent.")
+        elif current_hash != prev_hash:
+            msg = ALERT_MESSAGE
+            log(msg)
+            send_sms(msg)
+        else:
+            log("No change detected.")
+
+        state["page_hash"] = current_hash
+
+    elif MODE == "text":
+        state = check_watch_text(content, state)
+
     else:
-        log("No change detected.")
+        log(f"ERROR: Unknown MODE '{MODE}'. Use 'hash' or 'text'.")
+        sys.exit(1)
 
-    state["page_hash"] = current_hash
-    state = check_watch_text(content, state)
     save_state(state)
 
 
