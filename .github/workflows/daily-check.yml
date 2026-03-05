@@ -29,6 +29,7 @@ jobs:
           ALERT_MESSAGE: ${{ vars.ALERT_MESSAGE }}
           WATCH_TEXT: ${{ vars.WATCH_TEXT }}
           MISSING_TEXT_MESSAGE: ${{ vars.MISSING_TEXT_MESSAGE }}
+          MODE: ${{ vars.MODE }}
           PHONE: ${{ secrets.PHONE }}
           TEXTBELT_APIKEY: ${{ secrets.TEXTBELT_APIKEY }}
         run: python monitor.py
